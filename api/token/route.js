@@ -1,28 +1,30 @@
 export const runtime = 'edge';
 
-export async function GET(request) {
-  return handleRequest(request);
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Cache-Control': 'no-store'
+};
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders
+  });
 }
 
-export async function POST(request) {
-  return handleRequest(request);
+export async function GET() {
+  return handleRequest();
 }
 
-async function handleRequest(request) {
-  // Handle CORS preflight
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    });
-  }
+export async function POST() {
+  return handleRequest();
+}
 
+async function handleRequest() {
   try {
-    const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
+    const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -35,14 +37,16 @@ async function handleRequest(request) {
       }),
     });
     
-    const data = await r.json();
+    const data = await response.json();
     
-    if (!r.ok) {
-      return new Response(JSON.stringify(data), {
-        status: r.status,
+    if (!response.ok) {
+      return new Response(JSON.stringify({
+        error: data.error?.message || 'Failed to get token'
+      }), {
+        status: response.status,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          ...corsHeaders
         },
       });
     }
@@ -51,20 +55,18 @@ async function handleRequest(request) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Cache-Control': 'no-store',
+        ...corsHeaders
       },
     });
   } catch (error) {
+    console.error('Token generation error:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Internal Server Error'
+      error: 'Internal Server Error'
     }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        ...corsHeaders
       },
     });
   }

@@ -4,31 +4,31 @@
   "devCommand": "npm run dev",
   "builds": [
     {
-      "src": "api/**/*",
+      "src": "api/**/*.js",
       "use": "@vercel/node"
     },
     {
-      "src": "scormcontent/**",
+      "src": "scormcontent/**/*",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/api/token",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      },
-      "continue": true
+      "dest": "/api/token/route"
     },
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "src": "/lib/(.*)",
+      "dest": "/scormcontent/lib/$1"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/scormcontent/assets/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/scormcontent/$1"
+      "dest": "/scormcontent/$1",
+      "continue": true
     }
   ]
 }
