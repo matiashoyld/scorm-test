@@ -1,4 +1,9 @@
-export const runtime = 'edge';
+import { config } from 'dotenv';
+
+// Load environment variables in development
+if (process.env.NODE_ENV !== 'production') {
+  config();
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,6 +12,7 @@ const corsHeaders = {
   'Cache-Control': 'no-store'
 };
 
+// Handle CORS preflight
 export async function OPTIONS() {
   return new Response(null, {
     status: 204,
@@ -14,15 +20,16 @@ export async function OPTIONS() {
   });
 }
 
-export async function GET() {
-  return handleRequest();
+// Handle both GET and POST requests
+export async function GET(req) {
+  return handleRequest(req);
 }
 
-export async function POST() {
-  return handleRequest();
+export async function POST(req) {
+  return handleRequest(req);
 }
 
-async function handleRequest() {
+async function handleRequest(req) {
   try {
     const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
       method: "POST",
@@ -36,7 +43,7 @@ async function handleRequest() {
         instructions: "Eres un asistente de IA amigable y servicial. Siempre respondes en español, independientemente del idioma en que te hablen. Mantienes un tono conversacional y profesional. Si te hablan en otro idioma, entiendes perfectamente pero SIEMPRE respondes en español."
       }),
     });
-    
+
     if (!response.ok) {
       const data = await response.json();
       console.error('OpenAI API Error:', data);
@@ -50,7 +57,7 @@ async function handleRequest() {
         },
       });
     }
-    
+
     const data = await response.json();
     return new Response(JSON.stringify(data), {
       status: 200,
