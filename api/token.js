@@ -1,11 +1,26 @@
-import { config } from 'dotenv';
+import { config as loadEnv } from 'dotenv';
 
 // Load environment variables from .env file in development
 if (process.env.NODE_ENV !== 'production') {
-  config();
+  loadEnv();
 }
 
+export const config = {
+  runtime: 'edge'
+};
+
 export default async function handler(request) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
+  }
+
   try {
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
       method: "POST",
@@ -23,7 +38,13 @@ export default async function handler(request) {
     if (!r.ok) {
       const error = await r.json();
       console.error('OpenAI API Error:', error);
-      throw new Error(JSON.stringify(error));
+      return new Response(JSON.stringify(error), {
+        status: r.status,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
     }
     
     const data = await r.json();
@@ -32,7 +53,7 @@ export default async function handler(request) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*', // For local development
+        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       },
@@ -43,7 +64,7 @@ export default async function handler(request) {
       status: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*', // For local development
+        'Access-Control-Allow-Origin': '*',
       },
     });
   }
