@@ -45,6 +45,7 @@
     <script type="text/javascript" src="lib/player-0.0.11.min.js"></script>
     <script type="text/javascript" src="lib/lzwcompress.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="module" src="../../config.js"></script>
 
     <!-- Resize Hack -->
     <script type="text/javascript">
@@ -973,8 +974,7 @@
             await this.peerConnection.setLocalDescription(offer);
 
             const baseUrl = "https://api.openai.com/v1/realtime";
-            const model = "gpt-4o-realtime-preview-2024-12-17";
-            const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
+            const response = await fetch(`${baseUrl}?model=${API_CONFIG.model}`, {
               method: "POST",
               body: this.peerConnection.localDescription.sdp,
               headers: {
@@ -983,15 +983,15 @@
               },
             });
 
-            if (!sdpResponse.ok) {
-              const errorData = await sdpResponse.json();
+            if (!response.ok) {
+              const errorData = await response.json();
               console.error('SDP Response Error:', errorData);
               throw new Error(JSON.stringify(errorData));
             }
 
             const answer = {
               type: "answer",
-              sdp: await sdpResponse.text()
+              sdp: await response.text()
             };
             await this.peerConnection.setRemoteDescription(answer);
 

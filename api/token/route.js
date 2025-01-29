@@ -1,4 +1,5 @@
 import { config } from 'dotenv';
+import { API_CONFIG } from '../../config.js';
 
 // Load environment variables in development
 if (process.env.NODE_ENV !== 'production') {
@@ -37,11 +38,7 @@ async function handleRequest(req) {
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "gpt-4o-realtime-preview-2024-12-17",
-        voice: "alloy",
-        instructions: "Eres un asistente de IA amigable y servicial. Siempre respondes en español, independientemente del idioma en que te hablen. Mantienes un tono conversacional y profesional. Si te hablan en otro idioma, entiendes perfectamente pero SIEMPRE respondes en español."
-      }),
+      body: JSON.stringify(API_CONFIG),
     });
 
     if (!response.ok) {
