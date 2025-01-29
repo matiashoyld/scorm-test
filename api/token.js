@@ -1,10 +1,3 @@
-import { config as loadEnv } from 'dotenv';
-
-// Load environment variables from .env file in development
-if (process.env.NODE_ENV !== 'production') {
-  loadEnv();
-}
-
 export const config = {
   runtime: 'edge'
 };
