@@ -18,20 +18,37 @@
       "dest": "/api/token/route"
     },
     {
-      "src": "/scormcontent/(.*)",
-      "dest": "/scormcontent/$1"
+      "src": "/",
+      "dest": "/scormcontent/index.html"
+    },
+    {
+      "src": "/index.html",
+      "dest": "/scormcontent/index.html"
     },
     {
       "src": "/lib/(.*)",
-      "dest": "/scormcontent/lib/$1"
+      "dest": "/scormcontent/lib/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
     },
     {
       "src": "/assets/(.*)",
-      "dest": "/scormcontent/assets/$1"
+      "dest": "/scormcontent/assets/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
     },
     {
-      "src": "^(?!/scormcontent).*$",
-      "dest": "/scormcontent/index.html"
+      "src": "/locales/(.*)",
+      "dest": "/scormcontent/locales/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/scormcontent/$1"
     }
   ]
 }
