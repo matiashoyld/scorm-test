@@ -893,7 +893,14 @@
           try {
             // Get ephemeral token from our API
             const tokenResponse = await fetch("/api/token");
+            if (!tokenResponse.ok) {
+              const errorData = await tokenResponse.json();
+              throw new Error(errorData.error || 'Failed to get token');
+            }
             const data = await tokenResponse.json();
+            if (!data.client_secret?.value) {
+              throw new Error('Invalid token response');
+            }
             const EPHEMERAL_KEY = data.client_secret.value;
 
             // Create WebRTC peer connection with STUN servers
@@ -955,7 +962,7 @@
             });
 
             const baseUrl = "https://api.openai.com/v1/realtime";
-            const model = "gpt-4o-mini-realtime-preview-2024-12-17"; 
+            const model = "gpt-4-1106-preview";
             const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
               method: "POST",
               body: this.peerConnection.localDescription.sdp,
@@ -981,7 +988,7 @@
             console.log("WebRTC connection established");
           } catch (error) {
             console.error("Failed to initialize WebRTC:", error);
-            this.addMessage("Sorry, I couldn't connect to the voice service. Please try again later.", 'assistant');
+            this.addMessage("Lo siento, no pude conectarme al servicio de voz. Por favor, inténtalo de nuevo más tarde.", 'assistant');
             throw error;
           }
         }
