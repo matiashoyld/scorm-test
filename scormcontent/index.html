@@ -649,7 +649,18 @@
           <i data-lucide="minimize-2"></i>
         </button>
       </div>
-      <iframe src="about:blank" frameborder="0"></iframe>
+      <div class="chat-content">
+        <div class="messages" id="messages"></div>
+        <div class="input-area">
+          <button class="voice-button" id="voiceButton">
+            <i data-lucide="mic"></i>
+          </button>
+          <input type="text" id="textInput" placeholder="Type a message...">
+          <button class="send-button" id="sendButton">
+            <i data-lucide="send"></i>
+          </button>
+        </div>
+      </div>
     </div>
 
     <style>
@@ -745,24 +756,366 @@
         height: 100%;
         border: none;
       }
+
+      .chat-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        height: calc(100% - 60px);
+      }
+
+      .messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 20px;
+      }
+
+      .message {
+        margin-bottom: 15px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .message.user {
+        align-items: flex-end;
+      }
+
+      .message.assistant {
+        align-items: flex-start;
+      }
+
+      .message-content {
+        max-width: 80%;
+        padding: 10px 15px;
+        border-radius: 15px;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .message.user .message-content {
+        background: #4a90e2;
+        color: white;
+        border-radius: 15px 15px 0 15px;
+      }
+
+      .message.assistant .message-content {
+        background: #f0f2f5;
+        color: #1a1a1a;
+        border-radius: 15px 15px 15px 0;
+      }
+
+      .input-area {
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-top: 1px solid #eee;
+      }
+
+      #textInput {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        outline: none;
+        font-size: 14px;
+      }
+
+      .voice-button, .send-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background-color 0.2s;
+      }
+
+      .voice-button:hover, .send-button:hover {
+        background-color: #f0f2f5;
+      }
+
+      .voice-button svg, .send-button svg {
+        width: 20px;
+        height: 20px;
+        color: #4a90e2;
+      }
+
+      .voice-button.recording {
+        background-color: #ff4444;
+      }
+
+      .voice-button.recording svg {
+        color: white;
+      }
     </style>
 
     <script>
       // Initialize Lucide icons
       lucide.createIcons()
 
-      // Chat window toggle functionality
-      const aiButton = document.getElementById('aiButton')
-      const chatWindow = document.getElementById('chatWindow')
-      const minimizeButton = document.getElementById('minimizeButton')
+      class AIAssistant {
+        constructor() {
+          this.peerConnection = null;
+          this.dataChannel = null;
+          this.audioElement = document.createElement('audio');
+          this.audioElement.autoplay = true;
+          this.mediaStream = null;
+          this.isRecording = false;
 
-      function toggleChat() {
-        chatWindow.classList.toggle('visible')
-        aiButton.classList.toggle('hidden')
+          this.setupUI();
+          this.setupEventListeners();
+        }
+
+        setupUI() {
+          this.aiButton = document.getElementById('aiButton');
+          this.chatWindow = document.getElementById('chatWindow');
+          this.minimizeButton = document.getElementById('minimizeButton');
+          this.voiceButton = document.getElementById('voiceButton');
+          this.textInput = document.getElementById('textInput');
+          this.sendButton = document.getElementById('sendButton');
+          this.messagesContainer = document.getElementById('messages');
+        }
+
+        setupEventListeners() {
+          this.aiButton.addEventListener('click', () => this.toggleChat());
+          this.minimizeButton.addEventListener('click', () => this.toggleChat());
+          this.voiceButton.addEventListener('click', () => this.toggleVoiceRecording());
+          this.sendButton.addEventListener('click', () => this.sendMessage());
+          this.textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.sendMessage();
+          });
+        }
+
+        async init() {
+          try {
+            // Get ephemeral token from our API
+            const tokenResponse = await fetch("/api/token");
+            const data = await tokenResponse.json();
+            const EPHEMERAL_KEY = data.client_secret.value;
+
+            // Create WebRTC peer connection with STUN servers
+            this.peerConnection = new RTCPeerConnection({
+              iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' }
+              ]
+            });
+
+            // Set up audio playback
+            this.audioElement = document.createElement('audio');
+            this.audioElement.autoplay = true;
+            document.body.appendChild(this.audioElement);
+            
+            this.peerConnection.ontrack = (e) => {
+              if (e.streams && e.streams[0]) {
+                this.audioElement.srcObject = e.streams[0];
+              }
+            };
+
+            // Add local audio track for microphone input
+            try {
+              this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                  echoCancellation: true,
+                  noiseSuppression: true,
+                  autoGainControl: true
+                }
+              });
+              const audioTrack = this.mediaStream.getAudioTracks()[0];
+              this.peerConnection.addTrack(audioTrack, this.mediaStream);
+            } catch (err) {
+              console.error('Error accessing microphone:', err);
+              throw new Error('Microphone access is required for the AI assistant');
+            }
+
+            // Set up data channel
+            this.dataChannel = this.peerConnection.createDataChannel("oai-events");
+            this.setupDataChannel();
+
+            // Create and send offer
+            const offer = await this.peerConnection.createOffer({
+              offerToReceiveAudio: true,
+              voiceActivityDetection: true
+            });
+            await this.peerConnection.setLocalDescription(offer);
+
+            // Wait for ICE gathering to complete
+            await new Promise((resolve) => {
+              if (this.peerConnection.iceGatheringState === 'complete') {
+                resolve();
+              } else {
+                this.peerConnection.addEventListener('icegatheringstatechange', () => {
+                  if (this.peerConnection.iceGatheringState === 'complete') {
+                    resolve();
+                  }
+                });
+              }
+            });
+
+            const baseUrl = "https://api.openai.com/v1/realtime";
+            const model = "gpt-4o-mini-realtime-preview-2024-12-17"; 
+            const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
+              method: "POST",
+              body: this.peerConnection.localDescription.sdp,
+              headers: {
+                Authorization: `Bearer ${EPHEMERAL_KEY}`,
+                "Content-Type": "application/sdp"
+              },
+            });
+
+            if (!sdpResponse.ok) {
+              const errorData = await sdpResponse.json();
+              console.error('SDP Response Error:', errorData);
+              throw new Error(JSON.stringify(errorData));
+            }
+
+            const answerSdp = await sdpResponse.text();
+            const answer = new RTCSessionDescription({
+              type: 'answer',
+              sdp: answerSdp
+            });
+            
+            await this.peerConnection.setRemoteDescription(answer);
+            console.log("WebRTC connection established");
+          } catch (error) {
+            console.error("Failed to initialize WebRTC:", error);
+            this.addMessage("Sorry, I couldn't connect to the voice service. Please try again later.", 'assistant');
+            throw error;
+          }
+        }
+
+        setupDataChannel() {
+          this.dataChannel.onopen = () => {
+            console.log("Data channel opened");
+          };
+
+          this.dataChannel.onclose = () => {
+            console.log("Data channel closed");
+          };
+
+          this.dataChannel.onerror = (error) => {
+            console.error("Data channel error:", error);
+          };
+
+          this.dataChannel.onmessage = (e) => {
+            try {
+              const event = JSON.parse(e.data);
+              this.handleServerEvent(event);
+            } catch (error) {
+              console.error("Error handling message:", error);
+            }
+          };
+        }
+
+        handleServerEvent(event) {
+          switch (event.type) {
+            case "text.content":
+              this.addMessage(event.content, 'assistant');
+              break;
+            // Handle other event types as needed
+          }
+        }
+
+        addMessage(content, sender) {
+          const messageDiv = document.createElement('div');
+          messageDiv.className = `message ${sender}`;
+          
+          const messageContent = document.createElement('div');
+          messageContent.className = 'message-content';
+          messageContent.textContent = content;
+          
+          messageDiv.appendChild(messageContent);
+          this.messagesContainer.appendChild(messageDiv);
+          this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+        }
+
+        sendMessage() {
+          const text = this.textInput.value.trim();
+          if (text) {
+            this.addMessage(text, 'user');
+            // Initialize WebRTC if not already initialized and we're sending a message
+            if (!this.peerConnection) {
+              this.init().then(() => {
+                this.sendEvent({
+                  type: "response.create",
+                  response: {
+                    modalities: ["text"],
+                    instructions: text
+                  }
+                });
+              }).catch(error => {
+                console.error("Failed to initialize WebRTC:", error);
+                this.addMessage("Sorry, I couldn't connect to the AI service. Please try again.", 'assistant');
+              });
+            } else {
+              this.sendEvent({
+                type: "response.create",
+                response: {
+                  modalities: ["text"],
+                  instructions: text
+                }
+              });
+            }
+            this.textInput.value = '';
+          }
+        }
+
+        toggleChat() {
+          this.chatWindow.classList.toggle('visible');
+          this.aiButton.classList.toggle('hidden');
+        }
+
+        async toggleVoiceRecording() {
+          if (!this.isRecording) {
+            try {
+              // Initialize WebRTC if not already initialized
+              if (!this.peerConnection) {
+                await this.init();
+              }
+
+              this.voiceButton.classList.add('recording');
+              this.isRecording = true;
+
+              // Send start message
+              this.sendEvent({
+                type: "response.create",
+                response: {
+                  modalities: ["text", "speech"],
+                }
+              });
+            } catch (error) {
+              console.error("Error starting voice recording:", error);
+              this.addMessage("Sorry, I couldn't start voice recording. Please check your microphone permissions.", 'assistant');
+              this.voiceButton.classList.remove('recording');
+              this.isRecording = false;
+            }
+          } else {
+            this.voiceButton.classList.remove('recording');
+            this.isRecording = false;
+            
+            // Send end message
+            this.sendEvent({
+              type: "response.create",
+              response: {
+                modalities: ["text"],
+              }
+            });
+          }
+        }
+
+        sendEvent(event) {
+          if (this.dataChannel && this.dataChannel.readyState === 'open') {
+            this.dataChannel.send(JSON.stringify(event));
+          }
+        }
       }
 
-      aiButton.addEventListener('click', toggleChat)
-      minimizeButton.addEventListener('click', toggleChat)
+      // Initialize the AI Assistant when the page loads
+      document.addEventListener('DOMContentLoaded', () => {
+        window.aiAssistant = new AIAssistant();
+      });
     </script>
   </body>
 </html>
