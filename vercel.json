@@ -3,7 +3,7 @@
   "builds": [
     {
       "src": "api/**/*.js",
-      "use": "@vercel/edge"
+      "use": "@vercel/node"
     },
     {
       "src": "**/*",
@@ -19,7 +19,7 @@
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization"
       },
-      "continue": true
+      "dest": "/api/token"
     },
     {
       "handle": "filesystem"

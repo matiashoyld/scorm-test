@@ -1,5 +1,7 @@
+// Mark this file as an Edge Function
 export const config = {
-  runtime: 'edge'
+  runtime: 'edge',
+  regions: ['iad1'], // US East (N. Virginia)
 };
 
 export default async function handler(request) {
@@ -40,10 +42,10 @@ export default async function handler(request) {
       }),
     });
     
+    const data = await r.json();
+    
     if (!r.ok) {
-      const error = await r.json();
-      console.error('OpenAI API Error:', error);
-      return new Response(JSON.stringify(error), {
+      return new Response(JSON.stringify(data), {
         status: r.status,
         headers: {
           'Content-Type': 'application/json',
@@ -52,8 +54,6 @@ export default async function handler(request) {
       });
     }
     
-    const data = await r.json();
-    
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: {
@@ -61,6 +61,7 @@ export default async function handler(request) {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Cache-Control': 'no-store',
       },
     });
   } catch (error) {
