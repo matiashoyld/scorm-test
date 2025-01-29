@@ -31,7 +31,7 @@ async function handleRequest() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4-1106-preview",
+        model: "gpt-4o-realtime-preview-2024-12-17",
         voice: "alloy",
         instructions: "Eres un asistente de IA amigable y servicial. Siempre respondes en español, independientemente del idioma en que te hablen. Mantienes un tono conversacional y profesional. Si te hablan en otro idioma, entiendes perfectamente pero SIEMPRE respondes en español."
       }),
