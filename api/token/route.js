@@ -14,23 +14,15 @@ export async function OPTIONS() {
   });
 }
 
-export async function GET(request) {
-  return handleRequest(request);
+export async function GET() {
+  return handleRequest();
 }
 
-export async function POST(request) {
-  return handleRequest(request);
+export async function POST() {
+  return handleRequest();
 }
 
-async function handleRequest(request) {
-  // Add early return for preflight
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders
-    });
-  }
-
+async function handleRequest() {
   try {
     const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
       method: "POST",
@@ -45,9 +37,8 @@ async function handleRequest(request) {
       }),
     });
     
-    const data = await response.json();
-    
     if (!response.ok) {
+      const data = await response.json();
       console.error('OpenAI API Error:', data);
       return new Response(JSON.stringify({
         error: data.error?.message || 'Failed to get token'
@@ -60,6 +51,7 @@ async function handleRequest(request) {
       });
     }
     
+    const data = await response.json();
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: {
