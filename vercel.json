@@ -4,7 +4,7 @@
   "devCommand": "npm run dev",
   "builds": [
     {
-      "src": "api/**/*.js",
+      "src": "api/token/route.js",
       "use": "@vercel/node"
     },
     {
@@ -27,8 +27,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/scormcontent/$1",
-      "continue": true
+      "dest": "/scormcontent/$1"
     }
   ]
 }
