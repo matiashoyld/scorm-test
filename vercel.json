@@ -18,6 +18,10 @@
       "dest": "/api/token/route"
     },
     {
+      "src": "/scormcontent/(.*)",
+      "dest": "/scormcontent/$1"
+    },
+    {
       "src": "/lib/(.*)",
       "dest": "/scormcontent/lib/$1"
     },
@@ -26,8 +30,8 @@
       "dest": "/scormcontent/assets/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/scormcontent/$1"
+      "src": "^(?!/scormcontent).*$",
+      "dest": "/scormcontent/index.html"
     }
   ]
 }
