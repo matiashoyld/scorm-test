@@ -3,6 +3,7 @@ export const config = {
 };
 
 export default async function handler(request) {
+  // Handle CORS preflight requests
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -10,6 +11,17 @@ export default async function handler(request) {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
+  }
+
+  // Only allow GET and POST methods
+  if (request.method !== 'GET' && request.method !== 'POST') {
+    return new Response('Method not allowed', {
+      status: 405,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'text/plain',
       },
     });
   }
@@ -22,7 +34,7 @@ export default async function handler(request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini-realtime-preview-2024-12-17",
+        model: "gpt-4-1106-preview",  // Using a known valid model
         voice: "alloy",
         instructions: "Eres un asistente de IA amigable y servicial. Siempre respondes en español, independientemente del idioma en que te hablen. Mantienes un tono conversacional y profesional. Si te hablan en otro idioma, entiendes perfectamente pero SIEMPRE respondes en español."
       }),
