@@ -38,7 +38,11 @@ async function handleRequest(req) {
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(API_CONFIG),
+      body: JSON.stringify({
+        model: "gpt-4o-mini-realtime-preview-2024-12-17",
+        voice: "alloy", 
+        instructions: "Eres un asistente de IA amigable y servicial. Siempre respondes en español, independientemente del idioma en que te hablen. Mantienes un tono conversacional y profesional. Si te hablan en otro idioma, entiendes perfectamente pero SIEMPRE respondes en español."
+      }),
     });
 
     if (!response.ok) {
