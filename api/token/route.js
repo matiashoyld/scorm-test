@@ -1,5 +1,4 @@
 import { config } from 'dotenv';
-import { API_CONFIG } from '../../config.js';
 
 // Load environment variables in development
 if (process.env.NODE_ENV !== 'production') {

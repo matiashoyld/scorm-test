@@ -974,7 +974,7 @@
             await this.peerConnection.setLocalDescription(offer);
 
             const baseUrl = "https://api.openai.com/v1/realtime";
-            const response = await fetch(`${baseUrl}?model=${API_CONFIG.model}`, {
+            const response = await fetch(`${baseUrl}?model=gpt-4o-mini-realtime-preview-2024-12-17`, {
               method: "POST",
               body: this.peerConnection.localDescription.sdp,
               headers: {
