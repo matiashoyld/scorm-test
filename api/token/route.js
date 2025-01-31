@@ -33,7 +33,7 @@ async function handleRequest(req) {
   try {
     // Decode page content from header
     let pageContent = 'No hay contenido disponible';
-    const encodedContent = req.headers['x-page-content'];
+    const encodedContent = req.headers.get('x-page-content');
     
     if (encodedContent) {
       try {
