@@ -8,7 +8,7 @@ if (process.env.NODE_ENV !== 'production') {
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Page-Content',
   'Cache-Control': 'no-store'
 };
 
@@ -31,6 +31,25 @@ export async function POST(req) {
 
 async function handleRequest(req) {
   try {
+    // Decode page content from header
+    let pageContent = 'No hay contenido disponible';
+    const encodedContent = req.headers['x-page-content'];
+    
+    if (encodedContent) {
+      try {
+        pageContent = decodeURIComponent(escape(atob(encodedContent)));
+        console.log('Successfully decoded page content:', pageContent);
+      } catch (e) {
+        console.error('Error decoding page content:', e);
+        console.error('Error details:', {
+          message: e.message,
+          stack: e.stack
+        });
+      }
+    } else {
+      console.log('No x-page-content header found');
+    }
+
     const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
       method: "POST",
       headers: {
@@ -38,9 +57,22 @@ async function handleRequest(req) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini-realtime-preview-2024-12-17",
+        model: "gpt-4o-realtime-preview-2024-12-17",
         voice: "alloy", 
-        instructions: "Eres un asistente de IA amigable y servicial. Siempre respondes en español, independientemente del idioma en que te hablen. Mantienes un tono conversacional y profesional. Si te hablan en otro idioma, entiendes perfectamente pero SIEMPRE respondes en español."
+        instructions: `Eres un tutor ayudando al usuario a aprender inglés.
+        
+        Instrucciones:
+
+        1. Comienza hablando en español diciendo: "Hola, soy tu tutor de idiomas. A partir de ahora te hablaré en inglés, pero si cometes algún error, te corregiré en español".
+        2. Luego, mantén una conversación con el usuario sobre el curso que está realizando.
+        3. La conversación debe ser en inglés después de tu introducción en español. Si el usuario comete algún error hablando en inglés, debes corregirlo en español, y luego volver a hablar en inglés. 
+        4. Solo debes corregir al usuario en español si comete errores, sino, debes continuar la conversación en inglés.
+        
+        Este es el contenido del curso: 
+        %%%%
+        ${pageContent}
+        %%%%
+        `
       }),
     });
 
