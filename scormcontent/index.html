@@ -884,6 +884,88 @@
         color: white;
         margin-left: auto;
       }
+
+      /* Add media query for mobile devices */
+      @media screen and (max-width: 480px) {
+        .chat-window {
+          width: 100%;
+          height: 100%;
+          bottom: 0;
+          right: 0;
+          border-radius: 0;
+        }
+
+        .ai-assistant-button {
+          bottom: 10px;
+          right: 10px;
+          width: 50px;
+          height: 50px;
+        }
+
+        .ai-assistant-button svg {
+          width: 25px;
+          height: 25px;
+        }
+
+        .voice-interface {
+          padding: 20px 15px;
+        }
+
+        .timer {
+          margin-top: 20px;
+          margin-bottom: 20px;
+        }
+
+        .voice-button {
+          width: 100px;
+          height: 100px;
+        }
+
+        .voice-button svg {
+          width: 35px;
+          height: 35px;
+        }
+
+        .messages {
+          max-height: calc(100vh - 350px);
+        }
+
+        .message {
+          max-width: 90%;
+        }
+      }
+
+      /* Add landscape orientation styles */
+      @media screen and (max-width: 850px) and (orientation: landscape) {
+        .chat-window {
+          height: 100%;
+          width: 100%;
+          bottom: 0;
+          right: 0;
+          border-radius: 0;
+        }
+
+        .voice-interface {
+          flex-direction: row;
+          flex-wrap: wrap;
+          justify-content: center;
+          padding: 10px;
+        }
+
+        .timer {
+          width: 100%;
+          text-align: center;
+          margin: 10px 0;
+        }
+
+        .voice-button {
+          margin: 0 20px;
+        }
+
+        .messages {
+          max-height: calc(100vh - 250px);
+        }
+      }
     </style>
 
     <script>
